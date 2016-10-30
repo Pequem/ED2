@@ -10,7 +10,7 @@ struct item {
 	void *data;
 };
 
-void freeItem(Item *item);
+void freeItem(Item *item, bool freeData);
 void remove(List *list, Item *item, bool _delete);
 
 List* newList() {
