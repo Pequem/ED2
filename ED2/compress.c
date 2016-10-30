@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include <stdlib.h>
+#include "compress.h"
 
 void Compress(char *fileName) {
 

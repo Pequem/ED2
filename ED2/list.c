@@ -1,7 +1,6 @@
 #include "list.h"
 #include <stdlib.h>
 
-
 struct list {
 	Item *first, *last;
 };
@@ -12,6 +11,7 @@ struct item {
 };
 
 void freeItem(Item *item);
+void remove(List *list, Item *item, bool _delete);
 
 List* newList() {
 	List *list = malloc(sizeof(List));
@@ -31,7 +31,7 @@ Item* newItem(void *data) {
 	return item;
 }
 
-void insertItemOnFirst(List *list, Item *item) {
+void pushOnFirst(List *list, Item *item) {
 	if (item == NULL) {
 		return;
 	}
@@ -50,7 +50,7 @@ void insertItemOnFirst(List *list, Item *item) {
 	return;
 }
 
-void insertItemOnLast(List *list, Item *item) {
+void pushOnLast(List *list, Item *item) {
 	if (item == NULL) {
 		return;
 	}
@@ -86,7 +86,7 @@ int countItems(List *list) {
 	return count;
 }
 
-Item* search(List *list, int(*callback)(void*)) {
+int search(List *list, int(*callback)(void*)) {
 	if (list == NULL) {
 		return;
 	}
@@ -97,16 +97,50 @@ Item* search(List *list, int(*callback)(void*)) {
 		return;
 	}
 
+	int index = 0;
+
 	Item *aux = list->first;
 
 	while (aux != NULL) {
 		if (callback(aux->data)) {
-			return aux;
+			index++;
+			return index;
 		}
+		index++;
 		aux = aux->after;
 	}
 
-	return NULL;
+	return;
+}
+
+void* pull(List* list, int index) {
+	
+	if (list == NULL) {
+		return;
+	}
+
+	if (list->first == NULL) {
+		return;
+	}
+
+	if (index > countItems(list)) {
+		return;
+	}
+
+	Item *aux;
+	int i;
+
+	aux = list->first;
+
+	for (i = 1; i < index; i++) {
+		aux = aux->after;
+	}
+
+	void* data = aux->data;
+
+	remove(list, aux, false);
+
+	return data;
 }
 
 void remove(List *list, Item *item, bool _delete) {
@@ -129,18 +163,19 @@ void remove(List *list, Item *item, bool _delete) {
 		item->before->after = item->after;
 		item->after->before = item->before;
 	}
-	if(_delete)
-		freeItem(item);
+	
+	freeItem(item, _delete);
 	return;
 }
 
-void freeItem(Item *item) {
+void freeItem(Item *item, bool freeData) {
 
 	if (item == NULL) {
 		return;
 	}
 
-	free(item->data);
+	if(freeData)
+		free(item->data);
 	free(item);
 }
 

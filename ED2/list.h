@@ -7,4 +7,18 @@ typedef struct list List;
 typedef struct item Item;
 typedef int bool;
 
+List* newList();
+
+Item* newItem(void *data);
+
+void pushOnFirst(List* list, Item* item);
+
+void pushOnLast(List * list, Item * item);
+
+int countItems(List * list);
+
+int search(List * list, int(*callback)(void *));
+
+void freeList(List *list);
+
 #endif
