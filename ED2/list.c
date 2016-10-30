@@ -10,6 +10,8 @@ struct item {
 	void *data;
 };
 
+void freeItem(Item *item);
+
 List* newList() {
 	List *list = malloc(sizeof(List));
 	list->first = list->last = NULL;
@@ -104,4 +106,70 @@ Item* search(List *list, int (*callback)(void*)) {
 	}
 
 	return NULL;
+}
+
+void remove(List *list,Item *item) {
+
+	if (item == NULL) {
+		return;
+	}
+
+	if (list == NULL) {
+		return;
+	}
+
+	if (list->first == item) {
+		list->first = list->first->after;
+		freeItem(item);
+		return;
+	}
+
+	if (list->last == item) {
+		list->last = list->last->before;
+		free(item);
+		return;
+	}
+
+	item->before->after = item->after;
+	item->after->before = item->before;
+	freeItem(item);
+	return;
+}
+
+void freeItem(Item *item) {
+	
+	if (item == NULL) {
+		return;
+	}
+
+	free(item->data);
+	free(item);
+}
+
+void freeList(List *list) {
+	
+	if (list == NULL) {
+		return;
+	}
+
+	if (list->first == NULL) {
+		return;
+	}
+
+	Item *aux = list->first;
+
+	while (1) {
+		if (aux->after == NULL) {
+			remove(list, aux);
+			break;
+		}
+		else {
+			aux = aux->after;
+			remove(list, aux->before);
+		}
+	}
+	
+	free(list);
+
+	return;
 }
