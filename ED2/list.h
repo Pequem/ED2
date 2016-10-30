@@ -19,6 +19,8 @@ int countItems(List * list);
 
 int search(List * list, int(*callback)(void *));
 
+void * pull(List * list, int index);
+
 void freeList(List *list);
 
 #endif
