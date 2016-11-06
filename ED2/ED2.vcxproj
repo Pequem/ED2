@@ -113,10 +113,12 @@
     <ClCompile Include="main.c" />
     <ClCompile Include="compress.c" />
     <ClCompile Include="list.c" />
+    <ClCompile Include="tree.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="compress.h" />
     <ClInclude Include="list.h" />
+    <ClInclude Include="tree.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -3,8 +3,9 @@
 
 int main(int argc, char *argv[]) {
 
-	if (argc != 3) {
+	if (argc < 3) {
 		printf("entrada precisa ser '[Descompacta/Compacta] [Nome do arquivo]'");
+		return 0;
 	}
 
 	if (strcmp(argv[1], "Compacta") == 0) {

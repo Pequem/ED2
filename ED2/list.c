@@ -10,8 +10,8 @@ struct item {
 	void *data;
 };
 
-void freeItem(Item *item, bool freeData);
-void remove(List *list, Item *item, bool _delete);
+void freeItem(Item *item);
+void remove(List *list, Item *item);
 
 List* newList() {
 	List *list = malloc(sizeof(List));
@@ -86,7 +86,7 @@ int countItems(List *list) {
 	return count;
 }
 
-int search(List *list, int(*callback)(void*)) {
+int searchList(List *list, bool(*callback)(void*)) {
 	if (list == NULL) {
 		return;
 	}
@@ -116,11 +116,11 @@ int search(List *list, int(*callback)(void*)) {
 void* pull(List* list, int index) {
 	
 	if (list == NULL) {
-		return;
+		return NULL;
 	}
 
 	if (list->first == NULL) {
-		return;
+		return NULL;
 	}
 
 	if (index > countItems(list)) {
@@ -138,12 +138,12 @@ void* pull(List* list, int index) {
 
 	void* data = aux->data;
 
-	remove(list, aux, false);
+	remove(list, aux);
 
 	return data;
 }
 
-void remove(List *list, Item *item, bool _delete) {
+void remove(List *list, Item *item) {
 
 	if (item == NULL) {
 		return;
@@ -164,22 +164,20 @@ void remove(List *list, Item *item, bool _delete) {
 		item->after->before = item->before;
 	}
 	
-	freeItem(item, _delete);
+	freeItem(item);
 	return;
 }
 
-void freeItem(Item *item, bool freeData) {
+void freeItem(Item *item) {
 
 	if (item == NULL) {
 		return;
 	}
 
-	if(freeData)
-		free(item->data);
 	free(item);
 }
 
-void freeList(List *list) {
+void freeList(List *list, void(*callback)(void*)) {
 
 	if (list == NULL) {
 		return;
@@ -193,12 +191,14 @@ void freeList(List *list) {
 
 	while (1) {
 		if (aux->after == NULL) {
-			remove(list, aux, true);
+			callback(aux->data);
+			remove(list, aux);
 			break;
 		}
 		else {
 			aux = aux->after;
-			remove(list, aux->before, true);
+			callback(aux->before->data);
+			remove(list, aux->before);
 		}
 	}
 

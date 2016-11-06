@@ -17,10 +17,10 @@ void pushOnLast(List * list, Item * item);
 
 int countItems(List * list);
 
-int search(List * list, int(*callback)(void *));
+int searchList(List * list, bool(*callback)(void *));
 
 void * pull(List * list, int index);
 
-void freeList(List *list);
+void freeList(List *list, void(*callback)(void*));
 
 #endif
