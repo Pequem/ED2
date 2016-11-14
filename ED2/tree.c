@@ -1,4 +1,5 @@
 #include "tree.h"
+#include "bitmap.h"
 #include <stdlib.h>
 
 struct branch {

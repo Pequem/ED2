@@ -3,6 +3,7 @@
 #include "compress.h"
 #include "tree.h"
 #include "list.h"
+#include "bitmap.h"
 #include <string.h>
 
 //Struct com a arvore
@@ -53,6 +54,13 @@ int compare(void* i1, void* i2) {
 void printItem(void *i) {
 	BranchData *bd = tree_getData(i);
 	printf("\n%c %i", bd->letter, bd->frequency);
+}
+
+void compareData(void *b1, void *b2) {
+	BranchData *bd1, *bd2;
+	if (bd1->letter == bd2->letter)
+		return true;
+	return false;
 }
 
 void PreCreateDecoderTree(CompresserdFileData *CFData) {
@@ -114,8 +122,10 @@ void serializeList(CompresserdFileData *CFData, FILE *fc) {
 
 void code(CompresserdFileData *CFData, FILE *f, FILE *fc) {
 	char byte;
+	bitmap bm1, bm2;
 	while (true) {
 		fread(&byte, sizeof(char), 1, f);
+		bm2 = tree_getWay(tree_searchBranch(CFData->tree,compare), compare);
 		fwrite(&byte, sizeof(char), 1, fc);
 		if (feof(f)) {
 			break;
@@ -153,8 +163,6 @@ bool Compress(char *fileName) {
 
 	fclose(f);
 	f = fopen(fileName, "rb");
-	fclose(fc);
-	fc = fopen(fileCompressedName, "wb");
 	
 	code(&CFData, f, fc);
 }
