@@ -21,6 +21,12 @@ int list_searchList(List * list, bool(*callback)(void *));
 
 void * list_pull(List * list, int index);
 
+void* list_pullWithoutRemove(List* list, int index);
+
+void list_order(List *list, int(*callback)(void*,void*));
+
+void list_print(List* list, void(callback)(void*));
+
 void list_free(List *list, void(*callback)(void*));
 
 #endif

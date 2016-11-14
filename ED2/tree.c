@@ -2,28 +2,35 @@
 #include <stdlib.h>
 
 struct branch {
-	Branch *left, *right, *after;
+	Branch *left, *right, *before;
 	void *data;
 };
 
-Branch* newBranch(void *data) {
+Branch* tree_newBranch(void *data) {
 	Branch *branch = malloc(sizeof(Branch));
-	branch->left = branch->right = branch->after = NULL;
+	branch->left = branch->right = branch->before = NULL;
 	branch->data = data;
 	return branch;
 }
 
-bool pushBranch(Branch *a, Branch *b, Direction direction) {
-	b->after = a;
+//coloca o galho b em uma das ramificações do galho a
+bool tree_pushBranch(Branch *a, Branch *b, Direction direction) {
+	
 	if ((a == NULL) || (b == NULL))
 		return false;
+
+	b->before = a;
+
 	if (direction == _right) {
+
 		if (a->right != NULL)
 			return false;
 		a->right = b;
 		return true;
+
 	}
 	else {
+
 		if (a->left != NULL)
 			return false;
 		a->left = b;
@@ -32,7 +39,8 @@ bool pushBranch(Branch *a, Branch *b, Direction direction) {
 	return false;
 }
 
-Branch *searchBranch(Branch *root, bool(*callback)(void*)) {
+//retorna o galho contendo o dado especifico
+Branch *tree_searchBranch(Branch *root, bool(*callback)(void*)) {
 	if ((root == NULL) || (callback == NULL))
 		return NULL;
 
@@ -57,20 +65,21 @@ Branch *searchBranch(Branch *root, bool(*callback)(void*)) {
 	return NULL;
 }
 
-void* getData(Branch *b) {
+void* tree_getData(Branch *b) {
 	return b->data;
 }
 
-void setData(Branch *b, void *data) {
+void tree_setData(Branch *b, void *data) {
 	b->data = data;
 }
 
 //implementar
-void getWay(Branch *b, bool(*callback)(void*)) {
+//retorna o caminho do galho ate a raiz
+void tree_getWay(Branch *b, bool(*callback)(void*)) {
 	if (b == NULL)
 		return;
 	while (b != NULL) {
-		b = b->after;
+		b = b->before;
 		if (callback(b->left)) {
 			//soma 1
 		}else{
@@ -79,7 +88,8 @@ void getWay(Branch *b, bool(*callback)(void*)) {
 	}
 }
 
-bool *walkTree(Branch *b, Direction d) {
+//"anda" na arvore seguindo a direção desejada
+bool *tree_walkTree(Branch *b, Direction d) {
 	if (b == NULL) {
 		return false;
 	}
@@ -100,7 +110,7 @@ bool *walkTree(Branch *b, Direction d) {
 	return true;
 }
 
-void freeBranch(Branch *a) {
+void tree_freeBranch(Branch *a) {
 	if (a == NULL)
 		return;
 	free(a);
