@@ -8,6 +8,6 @@ typedef int bool;
 
 void Descompress(char *fileName);
 
-void Compress(char *fileName);
+bool Compress(char *fileName);
 
 #endif

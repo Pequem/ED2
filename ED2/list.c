@@ -13,13 +13,13 @@ struct item {
 void freeItem(Item *item);
 void remove(List *list, Item *item);
 
-List* newList() {
+List* list_new() {
 	List *list = malloc(sizeof(List));
 	list->first = list->last = NULL;
 	return list;
 }
 
-Item* newItem(void *data) {
+Item* list_newItem(void *data) {
 
 	if (data == NULL) {
 		return;
@@ -31,7 +31,7 @@ Item* newItem(void *data) {
 	return item;
 }
 
-void pushOnFirst(List *list, Item *item) {
+void list_pushOnFirst(List *list, Item *item) {
 	if (item == NULL) {
 		return;
 	}
@@ -50,7 +50,7 @@ void pushOnFirst(List *list, Item *item) {
 	return;
 }
 
-void pushOnLast(List *list, Item *item) {
+void list_pushOnLast(List *list, Item *item) {
 	if (item == NULL) {
 		return;
 	}
@@ -69,7 +69,7 @@ void pushOnLast(List *list, Item *item) {
 	return;
 }
 
-int countItems(List *list) {
+int list_countItems(List *list) {
 	if (list->first == NULL) {
 		return 0;
 	}
@@ -86,7 +86,7 @@ int countItems(List *list) {
 	return count;
 }
 
-int searchList(List *list, bool(*callback)(void*)) {
+int list_searchList(List *list, bool(*callback)(void*)) {
 	if (list == NULL) {
 		return;
 	}
@@ -113,7 +113,7 @@ int searchList(List *list, bool(*callback)(void*)) {
 	return;
 }
 
-void* pull(List* list, int index) {
+void* list_pull(List* list, int index) {
 	
 	if (list == NULL) {
 		return NULL;
@@ -123,7 +123,7 @@ void* pull(List* list, int index) {
 		return NULL;
 	}
 
-	if (index > countItems(list)) {
+	if (index > list_countItems(list)) {
 		return;
 	}
 
@@ -177,7 +177,7 @@ void freeItem(Item *item) {
 	free(item);
 }
 
-void freeList(List *list, void(*callback)(void*)) {
+void list_free(List *list, void(*callback)(void*)) {
 
 	if (list == NULL) {
 		return;
