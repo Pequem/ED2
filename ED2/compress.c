@@ -8,18 +8,25 @@
 
 //Struct com a arvore
 typedef struct{
-	unsigned int frequencyArray[256];
+	int frequencyArray[256];
 	Branch *tree;
 	List *branchList;
-}CompresserdFileData;
+}CompressedFileData;
 
 //Struct para a varialvel data dos nós da arvore
 typedef struct {
-	char letter;
-	int frequency;
+	unsigned char letter;
+	short int frequency;
 } BranchData;
 
-void frequencyCount(CompresserdFileData* CFData, FILE *f) {
+void printbitmap(bitmap bm) {
+	int i;
+	for (i = 0; i < bitmapGetLength(bm); i++) {
+		printf("%i", bitmapGetBit(bm, i));
+	}
+}
+
+void frequencyCount(CompressedFileData* CFData, FILE *f) {
 	int i;
 	//Zerando o vetor de frequencia
 	for (i = 0; i < 256; i++) {
@@ -57,13 +64,18 @@ void printItem(void *i) {
 }
 
 void compareData(void *b1, void *b2) {
+	if ((b1 == NULL) || (b2 == NULL)) {
+		return false;
+	}
 	BranchData *bd1, *bd2;
+	bd1 = b1;
+	bd2 = b2;
 	if (bd1->letter == bd2->letter)
 		return true;
 	return false;
 }
 
-void PreCreateDecoderTree(CompresserdFileData *CFData) {
+void PreCreateDecoderTree(CompressedFileData *CFData) {
 
 	int i;
 
@@ -85,7 +97,7 @@ void PreCreateDecoderTree(CompresserdFileData *CFData) {
 	list_print(CFData->branchList, printItem);
 }
 
-void CreateDecoderTree(CompresserdFileData *CFData) {
+void CreateDecoderTree(CompressedFileData *CFData) {
 	Branch *b1, *b2, *bf;
 
 	while (list_countItems(CFData->branchList) > 1) {
@@ -104,7 +116,7 @@ void CreateDecoderTree(CompresserdFileData *CFData) {
 	list_free(CFData->branchList, NULL);
 }
 
-void serializeList(CompresserdFileData *CFData, FILE *fc) {
+void serializeList(CompressedFileData *CFData, FILE *fc) {
 	
 	int nItens = list_countItems(CFData->branchList);
 	int i;
@@ -120,18 +132,42 @@ void serializeList(CompresserdFileData *CFData, FILE *fc) {
 	}
 }
 
-void code(CompresserdFileData *CFData, FILE *f, FILE *fc) {
-	char byte;
+void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
+	unsigned char byte, byte2;
 	bitmap bm1, bm2;
+	bm1  = bitmapInit(8);
+	int bm1Length,bm2Position,bm2Length;
+	int i;
 	while (true) {
-		fread(&byte, sizeof(char), 1, f);
-		bm2 = tree_getWay(tree_searchBranch(CFData->tree,compare), compare);
-		fwrite(&byte, sizeof(char), 1, fc);
+		bm1Length = bitmapGetLength(bm1);
+		while (bm1Length < 8) {
+			fread(&byte, sizeof(char), 1, f);
+			bm2 = tree_getWay(tree_searchBranch(CFData->tree, &byte ,compareData));	
+			for (i = 0; i < bitmapGetLength(bm2); i++) {
+					bitmapAppendLeastSignificantBit(&bm1, bitmapGetBit(bm2, i));
+					if (bitmapGetLength(bm1) > 7) {
+						bm2Position = i+1;
+						break;
+					}
+				}
+				bm1Length = bitmapGetLength(bm1);
+		}
+		byte2 = bm1.contents[0];
+		
+		printbitmap(bm1);
+
+		fwrite(&byte2, sizeof(char), 1, fc);
+		bm1 = bitmapInit(8);
+		bm2Length = bitmapGetLength(bm2);
+		if (bm2Position < bm2Length) {
+			for (i = bm2Position; i < bitmapGetLength(bm2); i++) {
+				bitmapAppendLeastSignificantBit(&bm1, bitmapGetBit(bm2, i));
+			}
+		}
 		if (feof(f)) {
 			break;
 		}
 	}
-
 }
 
 bool Compress(char *fileName) {
@@ -151,7 +187,7 @@ bool Compress(char *fileName) {
 		return false;
 	}
 
-	CompresserdFileData CFData;
+	CompressedFileData CFData;
 
 	frequencyCount(&CFData,f);
 
@@ -167,6 +203,88 @@ bool Compress(char *fileName) {
 	code(&CFData, f, fc);
 }
 
-void Descompress(char *fileName) {
+void CreateBranchDataList(CompressedFileData *CFData, int numItens, FILE *f) {
+	int i;
 
+	CFData->branchList = list_new();
+	BranchData *auxData;
+
+	for (i = 0; i < numItens; i++) {
+		auxData = malloc(sizeof(BranchData));
+		fread(auxData, sizeof(BranchData), 1, f);
+		list_pushOnLast(CFData->branchList, list_newItem(tree_newBranch(auxData)));
+	}
+	list_print(CFData->branchList, printItem);
+}
+
+void Decode(CompressedFileData *CFData, FILE *f, FILE *fd) {
+	
+	Branch *auxBranch;
+	BranchData *auxBranchData = NULL;
+	bitmap bm;
+	unsigned char byte,bit;
+	int i;
+
+	bm.length = bm.max_size = 8;
+	
+	auxBranch = CFData->tree;
+
+	while (true) {
+		fread(&byte, sizeof(char), 1, f);
+		if (feof(f))
+			break;
+		bm.contents = &byte;
+
+		printbitmap(bm);
+
+		for (i = 0; i < 8; i++) {
+			bit = bitmapGetBit(bm, i);
+			if (bit == 1) {
+				auxBranch = tree_walkTree(auxBranch, _left);
+			}
+			else {
+				auxBranch = tree_walkTree(auxBranch, _right);
+			}
+			auxBranchData = tree_getData(auxBranch);
+			if (auxBranchData != NULL) {
+				fwrite(&(auxBranchData->letter), sizeof(char), 1, fd);
+				auxBranch = CFData->tree;
+			}
+		}
+	}
+}
+
+void Descompress(char *fileName) {
+	
+	CompressedFileData CFData;
+	FILE *f;
+	FILE *fd;
+	char *fileDescompressName;
+
+	fileDescompressName = malloc(sizeof(char)*(strlen(fileName) + 1));
+	strcpy(fileDescompressName, fileName);
+	strcat(fileDescompressName, ".txt");
+	
+	f = fopen(fileName, "rb");
+	fd = fopen(fileDescompressName, "wb");
+
+	if (f == NULL) {
+		return;
+	}
+
+	if (fd == NULL) {
+		return;
+	}
+
+	int numBranchDataItens;
+
+	fread(&numBranchDataItens, sizeof(int), 1, f);
+
+	CFData.branchList = malloc(sizeof(BranchData)*numBranchDataItens);
+
+	CreateBranchDataList(&CFData, numBranchDataItens, f);
+
+	CreateDecoderTree(&CFData);
+
+	Decode(&CFData, f, fd);
 }

@@ -14,6 +14,13 @@ Branch* tree_newBranch(void *data) {
 	return branch;
 }
 
+void printbitmap2(bitmap bm) {
+	int i;
+	for (i = 0; i < bitmapGetLength(bm); i++) {
+		printf("%i", bitmapGetBit(bm, i));
+	}
+}
+
 //coloca o galho b em uma das ramificações do galho a
 bool tree_pushBranch(Branch *a, Branch *b, Direction direction) {
 	
@@ -41,11 +48,11 @@ bool tree_pushBranch(Branch *a, Branch *b, Direction direction) {
 }
 
 //retorna o galho contendo o dado especifico
-Branch *tree_searchBranch(Branch *root, bool(*callback)(void*)) {
+Branch *tree_searchBranch(Branch *root, void *data, bool(*callback)(void*,void*)) {
 	if ((root == NULL) || (callback == NULL))
 		return NULL;
 
-	if (callback(root->data)) {
+	if (callback(root->data, data)) {
 		return root;
 	}
 
@@ -53,12 +60,12 @@ Branch *tree_searchBranch(Branch *root, bool(*callback)(void*)) {
 
 	branch = NULL;
 
-	//branch = search(root->left, callback);
+	branch = tree_searchBranch(root->left,data, callback);
 
 	if (branch != NULL)
 		return branch;
 
-	//branch = search(root->right, callback);
+	branch = tree_searchBranch(root->right, data, callback);
 
 	if (branch != NULL)
 		return branch;
@@ -74,41 +81,67 @@ void tree_setData(Branch *b, void *data) {
 	b->data = data;
 }
 
-//implementar
-//retorna o caminho do galho ate a raiz
-void tree_getWay(Branch *b, bool(*callback)(void*)) {
-	if (b == NULL)
-		return;
-	while (b != NULL) {
-		b = b->before;
-		if (callback(b->left)) {
-			//soma 1
-		}else{
-			//soma 0
-		}
-	}
-}
-
 //"anda" na arvore seguindo a direção desejada
-bool *tree_walkTree(Branch *b, Direction d) {
+Branch *tree_walkTree(Branch *b, Direction d) {
 	if (b == NULL) {
-		return false;
+		return;
 	}
 	
 	if (d == _right) {
-		if (b->right == NULL) {
-			return false;
-		}
-		b->right;
+		return b->right;
 	}
 	else {
-		if (b->left == NULL) {
-			return false;
+		return b->left;
+	}
+}
+
+void checkWay(bitmap bm, Branch *root, Branch *bTest) {
+	int i, length = bitmapGetLength(bm);
+	unsigned char bit;
+	for (i = 0; i < length; i++) {
+		bit = bitmapGetBit(bm, i);
+		if (bit == 1) {
+			root = tree_walkTree(root, _left);
 		}
-		b->left;
+		else {
+			root = tree_walkTree(root, _right);
+		}
+	}
+	if (!(root == bTest)) {
+		printf("Tree_getway falhou");
+		system("PAUSE");
+	}
+}
+
+bitmap tree_getWay(Branch *b) {
+	if (b == NULL)
+		return;
+	bitmap bm;
+	Branch *bTest = b;
+	bm = bitmapInit(8);
+	while (b->before != NULL) {
+		if (b->before->left == b) {
+			bitmapAppendLeastSignificantBit(&bm, 1);
+		}
+		else {
+			bitmapAppendLeastSignificantBit(&bm, 0);
+		}
+		b = b->before;
 	}
 
-	return true;
+	int i;
+	int length;
+	bitmap bm2;
+	length = bitmapGetLength(bm);
+	bm2 = bitmapInit(length);
+	for (i = 1; i <= length; i++) {
+		bitmapAppendLeastSignificantBit(&bm2, bitmapGetBit(bm, length - i));
+	}
+	
+	checkWay(bm2, b, bTest);
+	//printbitmap2(bm2);
+
+	return bm2;
 }
 
 void tree_freeBranch(Branch *a) {
