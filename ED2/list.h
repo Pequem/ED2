@@ -8,7 +8,7 @@ Essa lista é uma lista Genérica, duplamente encadeada e com sentinela
 //Constantes criadas para deixar o codigo mais legível
 #define true 1
 #define false 0
-typedef int bool;
+typedef short int bool;
 
 //Sentinela da lista
 typedef struct list List;

@@ -3,7 +3,7 @@
 
 #define true 1
 #define false 0
-typedef int bool;
+typedef short int bool;
 
 
 void Descompress(char *fileName);

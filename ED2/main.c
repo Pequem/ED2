@@ -18,11 +18,13 @@ int main(int argc, char *argv[]) {
 	if (strcmp(function, "Compacta") == 0) {
 		Compress(fileName);
 	}
-	else
+	else {
 		if (strcmp(function, "Descompacta") == 0) {
 			Descompress(fileName);
 		}
+	}
 		return 0;
+		
 }
 
 /*

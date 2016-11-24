@@ -243,11 +243,13 @@ void remove(List *list, Item *item) {
 
 	if (list->first == item) {
 		list->first = list->first->after;
-		list->first->before = NULL;
+		if(list->first != NULL)
+			list->first->before = NULL;
 	}
 	else if (list->last == item) {
 		list->last = list->last->before;
-		list->last->after = NULL;
+		if(list->last != NULL)
+			list->last->after = NULL;
 	}
 	else {
 		item->before->after = item->after;

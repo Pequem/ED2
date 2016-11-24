@@ -17,7 +17,6 @@ Branch* tree_newBranch(void *data) {
 	return branch;
 }
 
-//coloca o galho b em uma das ramificações do galho a
 bool tree_pushBranch(Branch *a, Branch *b, Direction direction) {
 	
 	if ((a == NULL) || (b == NULL))
@@ -31,10 +30,8 @@ bool tree_pushBranch(Branch *a, Branch *b, Direction direction) {
 			return false;
 		a->right = b;
 		return true;
-
 	}
 	else {
-
 		if (a->left != NULL)
 			return false;
 		a->left = b;
@@ -43,9 +40,8 @@ bool tree_pushBranch(Branch *a, Branch *b, Direction direction) {
 	return false;
 }
 
-//retorna o galho contendo o dado especifico
 Branch *tree_searchBranch(Branch *root, void *data, bool(*callback)(void*,void*)) {
-	if ((root == NULL) || (callback == NULL))
+	if ((root == NULL) || (callback == NULL) || (data == NULL))
 		return NULL;
 
 	if (callback(root->data, data)) {
@@ -70,14 +66,17 @@ Branch *tree_searchBranch(Branch *root, void *data, bool(*callback)(void*,void*)
 }
 
 void* tree_getData(Branch *b) {
+	if (b == NULL)
+		return NULL;
 	return b->data;
 }
 
 void tree_setData(Branch *b, void *data) {
+	if ((b == NULL) || (data == NULL))
+		return;
 	b->data = data;
 }
 
-//"anda" na arvore seguindo a direção desejada
 Branch *tree_walkTree(Branch *b, Direction d) {
 	if (b == NULL) {
 		return;
@@ -91,6 +90,7 @@ Branch *tree_walkTree(Branch *b, Direction d) {
 	}
 }
 
+//verifica se o caminho está correto
 void checkWay(bitmap bm, Branch *root, Branch *bTest) {
 	int i, length = bitmapGetLength(bm);
 	unsigned char bit;
@@ -105,16 +105,18 @@ void checkWay(bitmap bm, Branch *root, Branch *bTest) {
 	}
 	if (!(root == bTest)) {
 		printf("Tree_getway falhou");
-		system("PAUSE");
+		exit(EXIT_FAILURE);
 	}
 }
 
 bitmap tree_getWay(Branch *b) {
 	if (b == NULL)
 		return;
-	bitmap bm;
+	//Copia do Nó atual para testar o caminho
 	Branch *bTest = b;
-	bm = bitmapInit(8);
+	bitmap bm;
+	bm = bitmapInit(15);
+	//Descobre o caminho do Nó até a raiz
 	while (b->before != NULL) {
 		if (b->before->left == b) {
 			bitmapAppendLeastSignificantBit(&bm, 0);
@@ -125,6 +127,7 @@ bitmap tree_getWay(Branch *b) {
 		b = b->before;
 	}
 
+	//Inverte o caminho para obter o caminho da raiz ate o Nó
 	int i;
 	int length;
 	bitmap bm2;
@@ -140,6 +143,8 @@ bitmap tree_getWay(Branch *b) {
 }
 
 bool isLeaf(Branch *auxBranch) {
+	if (auxBranch == NULL)
+		return;
 	if ((auxBranch->left == NULL) && (auxBranch->right == NULL)) {
 		return true;
 	}
@@ -147,6 +152,8 @@ bool isLeaf(Branch *auxBranch) {
 }
 
 void tree_free(Branch *root, void(*callback)(void*)) {
+	if ((root == NULL) || (callback == NULL))
+		return;
 	if (root->left != NULL) {
 		tree_free(root->left, callback);
 	}

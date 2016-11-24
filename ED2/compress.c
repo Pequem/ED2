@@ -23,6 +23,7 @@ typedef struct{
 typedef struct {
 	unsigned char letter;
 	short int frequency;
+	bool haveByte;
 } BranchData;
 
 //função de callback para list_order 
@@ -44,9 +45,18 @@ void compareData(void *b1, void *b2) {
 	BranchData *bd1, *bd2;
 	bd1 = b1;
 	bd2 = b2;
-	if (bd1->letter == bd2->letter)
-		return true;
+	if ((bd1->haveByte == true) && (bd2->haveByte == true)) {
+		if (bd1->letter == bd2->letter)
+			return true;
+	}
 	return false;
+}
+
+//Função de callback para tree_free
+void freeBranchData(void *b) {
+	BranchData *_b;
+	_b = b;
+	free(_b);
 }
 
 //Função retira a extenção do arquivo e a retorna
@@ -75,13 +85,6 @@ char* extractFileType(char *fileName) {
 	return fileType;
 }
 
-//Função de callback para tree_free
-void freeBranchData(void *b) {
-	BranchData *_b;
-	_b = b;
-	free(_b);
-}
-
 //Função respondavel por contar as frequencias dos bytes dentro do arquivo a ser compactado
 void frequencyCount(CompressedFileData* CFData, FILE *f) {
 	int i;
@@ -92,6 +95,7 @@ void frequencyCount(CompressedFileData* CFData, FILE *f) {
 		CFData->frequencyArray[i] = 0;
 	}
 
+	//Contando as frequencias como demonstrado em sala da aula
 	while (true) {
 		fread(&bit, sizeof(char), 1, f);
 		if (feof(f)) {
@@ -103,8 +107,8 @@ void frequencyCount(CompressedFileData* CFData, FILE *f) {
 
 
 //Função para prepara os dados para a função de criar a arvore de decodificação,
-//essa função transforma o vetor de frequencia em uma lista de galhos e ordena 
-//essa lista em ordem crescente
+//essa função transforma o vetor de frequencia em uma lista de galhos e o ordena 
+//em ordem crescente
 void PreCreateDecoderTree(CompressedFileData *CFData) {
 
 	int i;
@@ -119,6 +123,7 @@ void PreCreateDecoderTree(CompressedFileData *CFData) {
 			bd = malloc(sizeof(BranchData));
 			bd->frequency = CFData->frequencyArray[i];
 			bd->letter = i;
+			bd->haveByte = true;
 			list_pushOnLast(CFData->branchList,list_newItem(tree_newBranch(bd)));
 		}
 	}
@@ -133,14 +138,17 @@ void CreateDecoderTree(CompressedFileData *CFData) {
 	BranchData *BDaux, *BDaux1, *BDaux2;
 
 	while (list_countItems(CFData->branchList) > 1) {
+		//Retirando os dois primeiros sem reposição
 		b1 = list_pull(CFData->branchList, 0);
 		b2 = list_pull(CFData->branchList, 0);
 
+		//Recuperando os dados para acessar os pesos
 		BDaux1 = tree_getData(b1);
 		BDaux2 = tree_getData(b2);
 
 		BDaux = malloc(sizeof(BranchData));
 		BDaux->letter = 0;
+		BDaux->haveByte = false;
 		BDaux->frequency = BDaux1->frequency + BDaux2->frequency;
 		bf = tree_newBranch(BDaux);
 		
@@ -165,26 +173,42 @@ void serializeList(CompressedFileData *CFData, FILE *fc) {
 	int i;
 	Branch *b;
 	BranchData *bd;
+	short int frequency;
+	unsigned char byte;
 
 	fwrite(&nItens, sizeof(short int), 1, fc);
 
 	for (i = 0; i < nItens; i++) {
 		b = list_pullWithoutRemove(CFData->branchList, i);
 		bd = tree_getData(b);
-		fwrite(bd, sizeof(BranchData), 1, fc);
+		frequency = bd->frequency;
+		byte = bd->letter;
+		fwrite(&frequency, sizeof(short int), 1, fc);
+		fwrite(&byte, sizeof(unsigned char), 1, fc);
 	}
 }
 
+//void pb(bitmap b) {
+//	int i;
+//	for (i = 0; i < bitmapGetLength(b); i++) {
+//		printf("%i", bitmapGetBit(b, i));
+//	}
+//}
+
 //Função responsavel por compactar o arquivo
 void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
-	
+
 	unsigned char byte, byte2;
 	//bm2 é usada para armazenar a representação do byte na arvore (caminho) e bm1 é
 	//usada como burffer, uma vez q o s.o. só escreve de byte em byte
 	bitmap bm1, bm2;
+	BranchData *bd;
 	int bm1Length,bm2Position,bm2Length;
 	int i;
-	bool deleteBm2 = false;
+
+	//Necessario para passar nos requisitos do compare data
+	bd = malloc(sizeof(BranchData));
+	bd->haveByte = true;
 
 	bm1  = bitmapInit(8);
 	CFData->dataLength = 0;
@@ -200,12 +224,14 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 
 			//Le o byte do arquivo a ser compactado
 			fread(&byte, sizeof(char), 1, f);
+			//Verifica se o byte não é o final do arquivo
 			if (feof(f)) {
 				break;
 			}
+			bd->letter = byte;
 			//Recupera a representação do byte lido na arvore (caminho da raiz a folha)
-			bm2 = tree_getWay(tree_searchBranch(CFData->tree, &byte ,compareData));
-			deleteBm2 = true;
+			bm2 = tree_getWay(tree_searchBranch(CFData->tree, bd ,compareData));
+			bm2Position = 0;
 			//soma o tamanho do bm2 na dataLength (que representa o tamanho total dos dados
 			//compactados)
 			CFData->dataLength += bitmapGetLength(bm2);
@@ -213,42 +239,48 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 			//Tranfere os dados do bitmap 2 para o 1
 			for (i = 0; i < bitmapGetLength(bm2); i++) {
 					bitmapAppendLeastSignificantBit(&bm1, bitmapGetBit(bm2, i));
-					
+					bm2Position++;
 					//Quando o bitmap 1 atinge o tamanho de um byte, o loop é interrompido
-					// e a posição do curso no bm2 é armazenada
 					if (bitmapGetLength(bm1) > 7) {
-						bm2Position = i+1;
-						deleteBm2 = false;
 						break;
 					}
 				}
-			if (deleteBm2) {
+			//Caso o bm2 não tenha mais buffer ele é liberado
+			if (bm2Position >= bitmapGetLength(bm2)) {
 				free(bm2.contents);
-				deleteBm2 = false;
 			}
 				//Atualiza o bm1Length que é usado no inicio do loop para saber se bm1 esta cheio
 				bm1Length = bitmapGetLength(bm1);
 		}
 		//recupera o byte que esta em bm1, lembrando que ele esta cheio (contem 8 bits)
 		byte2 = bm1.contents[0];
-
 		//escreve o byte de bm1
 		fwrite(&byte2, sizeof(char), 1, fc);
 		//reinicia o bitmap bm1
 		free(bm1.contents);
 		bm1 = bitmapInit(8);
 		//caso ainda exista alguma informação em bm2, a mesma é tranferida pra bm1,
-		//a posiçao do cursor é usada aqui para saber se bm2 possui dados pendentes
 		bm2Length = bitmapGetLength(bm2);
-		if (bm2Position < bm2Length) {
+		while (bm2Position < bm2Length) {
 			for (i = bm2Position; i < bitmapGetLength(bm2); i++) {
 				bitmapAppendLeastSignificantBit(&bm1, bitmapGetBit(bm2, i));
+				bm2Position++;
+				if (bitmapGetLength(bm1) > 7)
+					break;
 			}
+			//Exvazia bm1 caso estaja cheio
+			if (bitmapGetLength(bm1) > 7) {
+				byte2 = bm1.contents[0];
+				fwrite(&byte2, sizeof(char), 1, fc);
+				free(bm1.contents);
+				bm1 = bitmapInit(8);
+			}
+			if (bm2Position >= bm2Length)
+				free(bm2.contents);
 		}
-		if(deleteBm2)
-			free(bm2.contents);		
 	}
 	free(bm1.contents);
+	free(bd);
 }
 
 //Função que coordena o processo de compactar
@@ -322,6 +354,8 @@ void ProcessHeader(CompressedFileData *CFData, FILE *f) {
 	int i;
 	short int fileTypeLength = 0;
 	short int numItens = 0;
+	short int frequency;
+	unsigned char byte;
 	
 	fread(&fileTypeLength, sizeof(short int), 1, f);
 	CFData->fileType = malloc(sizeof(char)*(fileTypeLength+1));
@@ -334,7 +368,11 @@ void ProcessHeader(CompressedFileData *CFData, FILE *f) {
 
 	for (i = 0; i < numItens; i++) {
 		auxData = malloc(sizeof(BranchData));
-		fread(auxData, sizeof(BranchData), 1, f);
+		fread(&frequency, sizeof(short int), 1, f);
+		fread(&byte, sizeof(unsigned char), 1, f);
+		auxData->frequency = frequency;
+		auxData->letter = byte;
+		auxData->haveByte = true;
 		list_pushOnLast(CFData->branchList, list_newItem(tree_newBranch(auxData)));
 	}
 

@@ -6,7 +6,7 @@
 //Constantes criadas para deixar o codigo mais legível
 #define true 1
 #define false 0
-typedef int bool;
+typedef short int bool;
 
 //Constantes criadas para deixar o codigo mais legível
 #define _right 1
