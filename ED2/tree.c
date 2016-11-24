@@ -130,7 +130,7 @@ bitmap tree_getWay(Branch *b) {
 	for (i = 1; i <= length; i++) {
 		bitmapAppendLeastSignificantBit(&bm2, bitmapGetBit(bm, length - i));
 	}
-	
+	free(bm.contents);
 	checkWay(bm2, b, bTest);
 
 	return bm2;

@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[]) {
 	
-	char *function[20], *fileName[50];
+	char function[20], fileName[50];
 
 	if (argc < 3) {
 		printf("\nA entrada precisa ser '[Descompacta/Compacta] [Nome do arquivo]'\n");

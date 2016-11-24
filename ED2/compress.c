@@ -61,7 +61,7 @@ char* extractFileType(char *fileName) {
 		}
 	}
 	//armazenando tamanho para o tipo do arquivo
-	fileType = malloc(sizeof(char)*(strlen(fileName) - lastDotPosition + 1));
+	fileType = malloc(sizeof(char)*(strlen(fileName) - lastDotPosition + 2));
 	//Copiando a extenção do arquivo
 	for (i = lastDotPosition, j = 0; fileName[i] != '\0'; i++, j++) {
 		fileType[j] = fileName[i];
@@ -174,6 +174,7 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 	bitmap bm1, bm2;
 	int bm1Length,bm2Position,bm2Length;
 	int i;
+	bool deleteBm2 = false;
 
 	bm1  = bitmapInit(8);
 	CFData->dataLength = 0;
@@ -192,7 +193,7 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 
 			//Recupera a representação do byte lido na arvore (caminho da raiz a folha)
 			bm2 = tree_getWay(tree_searchBranch(CFData->tree, &byte ,compareData));
-
+			deleteBm2 = true;
 			//soma o tamanho do bm2 na dataLength (que representa o tamanho total dos dados
 			//compactados)
 			CFData->dataLength += bitmapGetLength(bm2);
@@ -205,9 +206,12 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 					// e a posição do curso no bm2 é armazenada
 					if (bitmapGetLength(bm1) > 7) {
 						bm2Position = i+1;
+						deleteBm2 = false;
 						break;
 					}
 				}
+			if(deleteBm2)
+				free(bm2.contents);
 				//Atualiza o bm1Length que é usado no inicio do loop para saber se bm1 esta cheio
 				bm1Length = bitmapGetLength(bm1);
 		}
@@ -217,6 +221,7 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 		//escreve o byte de bm1
 		fwrite(&byte2, sizeof(char), 1, fc);
 		//reinicia o bitmap bm1
+		free(bm1.contents);
 		bm1 = bitmapInit(8);
 		//caso ainda exista alguma informação em bm2, a mesma é tranferida pra bm1,
 		//a posiçao do cursor é usada aqui para saber se bm2 possui dados pendentes
@@ -226,16 +231,18 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 				bitmapAppendLeastSignificantBit(&bm1, bitmapGetBit(bm2, i));
 			}
 		}
+		free(bm2.contents);
 		//quebra o loop ao chegar no final do arquivo
 		if (feof(f)) {
 			break;
 		}
 	}
+	free(bm1.contents);
 }
 
 //Função que coordena o processo de compactar
 bool Compress(char *fileName) {
-	
+
 	CompressedFileData CFData;
 	FILE *f, *fc;
 	char *fileCompressedName;
@@ -247,7 +254,7 @@ bool Compress(char *fileName) {
 		return false;
 	}
 
-	fileNameWithoutType = malloc(sizeof(char)*strlen(fileName));
+	fileNameWithoutType = malloc(sizeof(char)*(strlen(fileName)+1));
 	strcpy(fileNameWithoutType, fileName);
 
 	CFData.fileType = extractFileType(fileNameWithoutType);
@@ -277,11 +284,14 @@ bool Compress(char *fileName) {
 	f = fopen(fileName, "rb");
 	
 	code(&CFData, f, fc);
-
+	
+	
+	fclose(f);
+	fclose(fc);
 	free(fileCompressedName);
 	tree_free(CFData.tree, freeBranchData);
 	free(CFData.fileType);
-	//free(fileNameWithoutType);
+	free(fileNameWithoutType);
 }
 
 //Função que le o cabeçalho do arquivo comprimido é recria a branchList
@@ -291,7 +301,7 @@ void ProcessHeader(CompressedFileData *CFData, FILE *f) {
 	short int numItens = 0;
 	
 	fread(&fileTypeLength, sizeof(short int), 1, f);
-	CFData->fileType = malloc(sizeof(char)*fileTypeLength);
+	CFData->fileType = malloc(sizeof(char)*(fileTypeLength+1));
 	fread(CFData->fileType, sizeof(char), fileTypeLength + 1, f);
 
 	fread(&numItens, sizeof(short int), 1, f);
@@ -356,13 +366,14 @@ void Descompress(char *fileName) {
 	CompressedFileData CFData;
 	FILE *f;
 	FILE *fd;
-	char *fileDescompressedName, *fileNameWithoutType;
+	char *fileDescompressedName, *fileNameWithoutType, *fileType;
 
-	fileNameWithoutType = malloc(sizeof(char)*strlen(fileName));
+	fileNameWithoutType = malloc(sizeof(char)*(strlen(fileName)+1));
 	strcpy(fileNameWithoutType, fileName);
 
-	extractFileType(fileNameWithoutType);
-	
+	fileType = extractFileType(fileNameWithoutType);
+	free(fileType);
+
 	f = fopen(fileName, "rb");
 
 	if (f == NULL) {
@@ -371,7 +382,7 @@ void Descompress(char *fileName) {
 
 	ProcessHeader(&CFData ,f);
 
-	fileDescompressedName = malloc(sizeof(char)*(strlen(fileNameWithoutType) + strlen(CFData.fileType)));
+	fileDescompressedName = malloc(sizeof(char)*(strlen(fileNameWithoutType) + strlen(CFData.fileType) + 1));
 	strcpy(fileDescompressedName, fileNameWithoutType);
 	strcat(fileDescompressedName, CFData.fileType);
 
@@ -386,5 +397,7 @@ void Descompress(char *fileName) {
 	Decode(&CFData, f, fd);
 
 	tree_free(CFData.tree, freeBranchData);
- 	//free(fileDescompressedName);
+ 	free(fileDescompressedName);
+	free(fileNameWithoutType);
+	free(CFData.fileType);
 }
