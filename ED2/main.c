@@ -26,13 +26,8 @@ int main(int argc, char *argv[]) {
 }
 
 /*
-Tem que reordenar a arvore a cada galho sim OKOK
-Os programas precisam ser separados ou em arquivos separados sim
-O tad bitmap pode ser violado/ pode ser personalizado  sim
-Programa lançando breakPoint's
-
 Reordenar a lista em cada passagem da arvora OKOK
-Criar o sistema para fazer parar
+Criar o sistema para fazer parar OKOK
 Organizar o cod prototipando as função no inicio do arquivo
 Separar compactador de descompactador
 Criar lib comum a ambos

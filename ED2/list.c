@@ -10,11 +10,16 @@ struct item {
 	void *data;
 };
 
+//Função privadas
 void freeItem(Item *item);
+//Função privadas
 void remove(List *list, Item *item);
 
 List* list_new() {
 	List *list = malloc(sizeof(List));
+	if (list == NULL) {
+		return NULL;
+	}
 	list->first = list->last = NULL;
 	return list;
 }
@@ -22,10 +27,13 @@ List* list_new() {
 Item* list_newItem(void *data) {
 
 	if (data == NULL) {
-		return;
+		return NULL;
 	}
 
 	Item *item = malloc(sizeof(Item));
+	if (item == NULL) {
+		return NULL;
+	}
 	item->after = item->before = NULL;
 	item->data = data;
 	return item;
@@ -46,6 +54,7 @@ void list_pushOnFirst(List *list, Item *item) {
 
 	list->first->before = item;
 	item->after = list->first;
+	item->before = NULL;
 	list->first = item;
 	return;
 }
@@ -65,11 +74,15 @@ void list_pushOnLast(List *list, Item *item) {
 
 	list->last->after = item;
 	item->before = list->last;
+	item->after = NULL;
 	list->last = item;
 	return;
 }
 
 int list_countItems(List *list) {
+	if (list == NULL) {
+		return 0;
+	}
 	if (list->first == NULL) {
 		return 0;
 	}
@@ -86,35 +99,35 @@ int list_countItems(List *list) {
 	return count;
 }
 
-int list_searchList(List *list, bool(*callback)(void*)) {
-	if (list == NULL) {
-		return;
-	}
-	if (callback == NULL) {
-		return;
-	}
-	if (list->first == NULL) {
-		return;
-	}
-
-	int index = 0;
-
-	Item *aux = list->first;
-
-	while (aux != NULL) {
-		if (callback(aux->data)) {
-			index++;
-			return index;
-		}
-		index++;
-		aux = aux->after;
-	}
-
-	return;
-}
+//int list_searchList(List *list, bool(*callback)(void*)) {
+//	if (list == NULL) {
+//		return;
+//	}
+//	if (callback == NULL) {
+//		return;
+//	}
+//	if (list->first == NULL) {
+//		return;
+//	}
+//
+//	int index = 0;
+//
+//	Item *aux = list->first;
+//
+//	while (aux != NULL) {
+//		if (callback(aux->data)) {
+//			index++;
+//			return index;
+//		}
+//		index++;
+//		aux = aux->after;
+//	}
+//
+//	return;
+//}
 
 void* list_pull(List* list, int index) {
-	
+
 	if (list == NULL) {
 		return NULL;
 	}
@@ -123,8 +136,8 @@ void* list_pull(List* list, int index) {
 		return NULL;
 	}
 
-	if (index > list_countItems(list)) {
-		return;
+	if (index >= list_countItems(list)) {
+		return NULL;
 	}
 
 	Item *aux;
@@ -153,8 +166,8 @@ void* list_pullWithoutRemove(List* list, int index) {
 		return NULL;
 	}
 
-	if (index > list_countItems(list)) {
-		return;
+	if (index >= list_countItems(list)) {
+		return NULL;
 	}
 
 	Item *aux;
@@ -170,11 +183,20 @@ void* list_pullWithoutRemove(List* list, int index) {
 }
 
 void list_order(List * list, int(*callback)(void*, void*)) {
+	if ((list == NULL) || (callback == NULL)){
+		return;
+	}
+	
 	if (list->first == NULL) {
 		return;
 	}
 	
 	int nItens = list_countItems(list);
+
+	if (nItens <= 1) {
+		return;
+	}
+
 	int i, j;
 
 	Item *item;
@@ -194,6 +216,9 @@ void list_order(List * list, int(*callback)(void*, void*)) {
 }
 
 void list_print(List* list, void(callback)(void*)) {
+	if ((list == NULL) || (callback == NULL)) {
+		return;
+	}
 	if (list->first == NULL) {
 		return;
 	}
@@ -218,9 +243,11 @@ void remove(List *list, Item *item) {
 
 	if (list->first == item) {
 		list->first = list->first->after;
+		list->first->before = NULL;
 	}
 	else if (list->last == item) {
 		list->last = list->last->before;
+		list->last->after = NULL;
 	}
 	else {
 		item->before->after = item->after;
@@ -253,7 +280,7 @@ void list_free(List *list, void(*callback)(void*)) {
 
 	Item *aux = list->first;
 
-	while (1) {
+	while (true) {
 		if (aux->after == NULL) {
 			callback(aux->data);
 			remove(list, aux);

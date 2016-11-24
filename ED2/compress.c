@@ -189,7 +189,7 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 	bm1  = bitmapInit(8);
 	CFData->dataLength = 0;
 
-	while (true) {
+	while (!feof(f)) {
 		//Recupera o tamanho do bitmap 1 para verificar se o mesmo n esta cheio
 		bm1Length = bitmapGetLength(bm1);
 		
@@ -200,7 +200,9 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 
 			//Le o byte do arquivo a ser compactado
 			fread(&byte, sizeof(char), 1, f);
-
+			if (feof(f)) {
+				break;
+			}
 			//Recupera a representação do byte lido na arvore (caminho da raiz a folha)
 			bm2 = tree_getWay(tree_searchBranch(CFData->tree, &byte ,compareData));
 			deleteBm2 = true;
@@ -220,8 +222,10 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 						break;
 					}
 				}
-			if(deleteBm2)
+			if (deleteBm2) {
 				free(bm2.contents);
+				deleteBm2 = false;
+			}
 				//Atualiza o bm1Length que é usado no inicio do loop para saber se bm1 esta cheio
 				bm1Length = bitmapGetLength(bm1);
 		}
@@ -241,11 +245,8 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 				bitmapAppendLeastSignificantBit(&bm1, bitmapGetBit(bm2, i));
 			}
 		}
-		free(bm2.contents);
-		//quebra o loop ao chegar no final do arquivo
-		if (feof(f)) {
-			break;
-		}
+		if(deleteBm2)
+			free(bm2.contents);		
 	}
 	free(bm1.contents);
 }
@@ -290,7 +291,7 @@ bool Compress(char *fileName) {
 	fseek(f, 0, SEEK_SET);
 	
 	//Cria um arquivo temporario para ser gravado o binario
-	fcTemp = tempfile();
+	fcTemp = tmpfile();
 	
 	code(&CFData, f, fcTemp);
 	
@@ -301,7 +302,7 @@ bool Compress(char *fileName) {
 	fseek(fcTemp, 0, SEEK_SET);
 
 	//tranfere o conteudo do arquivo temporario para fc
-	while (feof(fcTemp)) {
+	while (!feof(fcTemp)) {
 		fread(&byte, sizeof(char), 1, fcTemp);
 		fwrite(&byte, sizeof(char), 1, fc);
 	}
@@ -312,6 +313,8 @@ bool Compress(char *fileName) {
 	free(fileCompressedName);
 	tree_free(CFData.tree, freeBranchData);
 	free(CFData.fileType);
+
+	return true;
 }
 
 //Função que le o cabeçalho do arquivo comprimido é recria a branchList
@@ -334,6 +337,8 @@ void ProcessHeader(CompressedFileData *CFData, FILE *f) {
 		fread(auxData, sizeof(BranchData), 1, f);
 		list_pushOnLast(CFData->branchList, list_newItem(tree_newBranch(auxData)));
 	}
+
+	fread(&(CFData->dataLength), sizeof(unsigned int), 1, f);
 }
 
 //Função que descompacta o arquivo
@@ -343,23 +348,24 @@ void Decode(CompressedFileData *CFData, FILE *f, FILE *fd) {
 	BranchData *auxBranchData = NULL;
 	bitmap bm;
 	unsigned char byte,bit;
-	int i;
+	int i, bitCount = 0;
 
 	bm.length = bm.max_size = 8;
 	
 	auxBranch = CFData->tree;
 
 	//Loop sera executado enquanto houver dados a ser lidos
-	while (true) {
+	while (bitCount < CFData->dataLength) {
 		//Le o px byte e verificar se é o final do arquivo
-		fread(&byte, sizeof(char), 1, f);
 		if (feof(f))
 			break;
+		fread(&byte, sizeof(char), 1, f);
+		
 		//insere o byte no bitmap para poder manipula-lo bit a bit
 		bm.contents = &byte;
 
 		//loop que pecorre todo o bitmap
-		for (i = 0; i < 8; i++) {
+		for (i = 0; (i < 8) && (bitCount < CFData->dataLength); i++) {
 			//recupera o px bit a ser lido e anda na arvore
 			bit = bitmapGetBit(bm, i);
 			if (bit == 0) {
@@ -368,10 +374,11 @@ void Decode(CompressedFileData *CFData, FILE *f, FILE *fd) {
 			else {
 				auxBranch = tree_walkTree(auxBranch, _right);
 			}
+			bitCount++;
 			//após andar na arvore, a função recupera oq esta no galho, caso seja nulo ele continua
 			// o loop, caso seja um byte, ele imprime o byte no arquivo descomprimido,
 			//retorna o auxBranch para a raiz da arvore e continua o loop
-			if (isLastBranch(auxBranch)) {
+			if (isLeaf(auxBranch)) {
 				auxBranchData = tree_getData(auxBranch);
 				fwrite(&(auxBranchData->letter), sizeof(char), 1, fd);
 				auxBranch = CFData->tree;
@@ -392,6 +399,9 @@ void Descompress(char *fileName) {
 	strcpy(fileNameWithoutType, fileName);
 
 	fileType = extractFileType(fileNameWithoutType);
+	if (strcmp(fileType, ".comp")) {
+		exit(EXIT_FAILURE);
+	}
 	free(fileType);
 
 	f = fopen(fileName, "rb");
@@ -416,6 +426,8 @@ void Descompress(char *fileName) {
 
 	Decode(&CFData, f, fd);
 
+	fclose(f);
+	fclose(fd);
 	tree_free(CFData.tree, freeBranchData);
  	free(fileDescompressedName);
 	free(fileNameWithoutType);
