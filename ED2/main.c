@@ -41,7 +41,7 @@ Minha forma de armazenar o cabeçalho
 Posso deixar lixo na pasta
 Tem como apagar o arquivo em C, é especifico para cada sistema
 No c é possivel add no inicio ou ele sobescreve
-
+Programa lançando breakPoint's
 
 Criar o sistema para fazer parar
 Organizar o cod prototipando as função no inicio do arquivo

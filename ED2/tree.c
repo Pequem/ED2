@@ -14,13 +14,6 @@ Branch* tree_newBranch(void *data) {
 	return branch;
 }
 
-void printbitmap2(bitmap bm) {
-	int i;
-	for (i = 0; i < bitmapGetLength(bm); i++) {
-		printf("%i", bitmapGetBit(bm, i));
-	}
-}
-
 //coloca o galho b em uma das ramificações do galho a
 bool tree_pushBranch(Branch *a, Branch *b, Direction direction) {
 	
@@ -139,7 +132,6 @@ bitmap tree_getWay(Branch *b) {
 	}
 	
 	checkWay(bm2, b, bTest);
-	//printbitmap2(bm2);
 
 	return bm2;
 }
