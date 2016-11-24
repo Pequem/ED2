@@ -188,6 +188,35 @@ void serializeList(CompressedFileData *CFData, FILE *fc) {
 	}
 }
 
+bitmap *createByteTable(CompressedFileData *CFData) {
+	bitmap *bmVet;
+	int i;
+	BranchData *bd;
+
+	bmVet = malloc(sizeof(bitmap) * 256);
+	bd = malloc(sizeof(BranchData));
+	bd->haveByte = true;
+
+	for (i = 0; i < 256; i++) {
+		if (CFData->frequencyArray[i] != 0) {
+			bd->letter = i;
+			bmVet[i] = tree_getWay(tree_searchBranch(CFData->tree, bd, compareData));
+		}
+	}
+	free(bd);
+	return bmVet;
+}
+
+void freeByteTable(bitmap *table, CompressedFileData *CFData) {
+	int i;
+	for (i = 0; i < 256; i++) {
+		if (CFData->frequencyArray[i] != 0) {
+			free(table[i].contents);
+		}
+	}
+	free(table);
+}
+
 //void pb(bitmap b) {
 //	int i;
 //	for (i = 0; i < bitmapGetLength(b); i++) {
@@ -196,19 +225,14 @@ void serializeList(CompressedFileData *CFData, FILE *fc) {
 //}
 
 //Função responsavel por compactar o arquivo
-void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
+void code(CompressedFileData *CFData, FILE *f, FILE *fc, bitmap* table) {
 
 	unsigned char byte, byte2;
 	//bm2 é usada para armazenar a representação do byte na arvore (caminho) e bm1 é
 	//usada como burffer, uma vez q o s.o. só escreve de byte em byte
 	bitmap bm1, bm2;
-	BranchData *bd;
 	int bm1Length,bm2Position,bm2Length;
 	int i;
-
-	//Necessario para passar nos requisitos do compare data
-	bd = malloc(sizeof(BranchData));
-	bd->haveByte = true;
 
 	bm1  = bitmapInit(8);
 	CFData->dataLength = 0;
@@ -228,9 +252,8 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 			if (feof(f)) {
 				break;
 			}
-			bd->letter = byte;
-			//Recupera a representação do byte lido na arvore (caminho da raiz a folha)
-			bm2 = tree_getWay(tree_searchBranch(CFData->tree, bd ,compareData));
+			//Recupera a representação do byte lido (caminho da raiz a folha)
+			bm2 = table[byte];
 			bm2Position = 0;
 			//soma o tamanho do bm2 na dataLength (que representa o tamanho total dos dados
 			//compactados)
@@ -245,10 +268,6 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 						break;
 					}
 				}
-			//Caso o bm2 não tenha mais buffer ele é liberado
-			if (bm2Position >= bitmapGetLength(bm2)) {
-				free(bm2.contents);
-			}
 				//Atualiza o bm1Length que é usado no inicio do loop para saber se bm1 esta cheio
 				bm1Length = bitmapGetLength(bm1);
 		}
@@ -275,12 +294,93 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 				free(bm1.contents);
 				bm1 = bitmapInit(8);
 			}
-			if (bm2Position >= bm2Length)
-				free(bm2.contents);
 		}
 	}
 	free(bm1.contents);
-	free(bd);
+
+	//unsigned char byte, byte2;
+	////bm2 é usada para armazenar a representação do byte na arvore (caminho) e bm1 é
+	////usada como burffer, uma vez q o s.o. só escreve de byte em byte
+	//bitmap bm1, bm2;
+	//BranchData *bd;
+	//int bm1Length, bm2Position, bm2Length;
+	//int i;
+
+	////Necessario para passar nos requisitos do compare data
+	//bd = malloc(sizeof(BranchData));
+	//bd->haveByte = true;
+
+	//bm1 = bitmapInit(8);
+	//CFData->dataLength = 0;
+
+	//while (!feof(f)) {
+	//	//Recupera o tamanho do bitmap 1 para verificar se o mesmo n esta cheio
+	//	bm1Length = bitmapGetLength(bm1);
+
+	//	//Caso o bitmap 1 não esteja cheio, a função recupera o proximo byte,
+	//	//caso contrario ele esvazia
+	//	//o bitmap 1
+	//	while (bm1Length < 8) {
+
+	//		//Le o byte do arquivo a ser compactado
+	//		fread(&byte, sizeof(char), 1, f);
+	//		//Verifica se o byte não é o final do arquivo
+	//		if (feof(f)) {
+	//			break;
+	//		}
+	//		bd->letter = byte;
+	//		//Recupera a representação do byte lido na arvore (caminho da raiz a folha)
+	//		bm2 = tree_getWay(tree_searchBranch(CFData->tree, bd, compareData));
+	//		bm2Position = 0;
+	//		//soma o tamanho do bm2 na dataLength (que representa o tamanho total dos dados
+	//		//compactados)
+	//		CFData->dataLength += bitmapGetLength(bm2);
+
+	//		//Tranfere os dados do bitmap 2 para o 1
+	//		for (i = 0; i < bitmapGetLength(bm2); i++) {
+	//			bitmapAppendLeastSignificantBit(&bm1, bitmapGetBit(bm2, i));
+	//			bm2Position++;
+	//			//Quando o bitmap 1 atinge o tamanho de um byte, o loop é interrompido
+	//			if (bitmapGetLength(bm1) > 7) {
+	//				break;
+	//			}
+	//		}
+	//		//Caso o bm2 não tenha mais buffer ele é liberado
+	//		if (bm2Position >= bitmapGetLength(bm2)) {
+	//			free(bm2.contents);
+	//		}
+	//		//Atualiza o bm1Length que é usado no inicio do loop para saber se bm1 esta cheio
+	//		bm1Length = bitmapGetLength(bm1);
+	//	}
+	//	//recupera o byte que esta em bm1, lembrando que ele esta cheio (contem 8 bits)
+	//	byte2 = bm1.contents[0];
+	//	//escreve o byte de bm1
+	//	fwrite(&byte2, sizeof(char), 1, fc);
+	//	//reinicia o bitmap bm1
+	//	free(bm1.contents);
+	//	bm1 = bitmapInit(8);
+	//	//caso ainda exista alguma informação em bm2, a mesma é tranferida pra bm1,
+	//	bm2Length = bitmapGetLength(bm2);
+	//	while (bm2Position < bm2Length) {
+	//		for (i = bm2Position; i < bitmapGetLength(bm2); i++) {
+	//			bitmapAppendLeastSignificantBit(&bm1, bitmapGetBit(bm2, i));
+	//			bm2Position++;
+	//			if (bitmapGetLength(bm1) > 7)
+	//				break;
+	//		}
+	//		//Exvazia bm1 caso estaja cheio
+	//		if (bitmapGetLength(bm1) > 7) {
+	//			byte2 = bm1.contents[0];
+	//			fwrite(&byte2, sizeof(char), 1, fc);
+	//			free(bm1.contents);
+	//			bm1 = bitmapInit(8);
+	//		}
+	//		if (bm2Position >= bm2Length)
+	//			free(bm2.contents);
+	//	}
+	//}
+	//free(bm1.contents);
+	//free(bd);
 }
 
 //Função que coordena o processo de compactar
@@ -290,6 +390,7 @@ bool Compress(char *fileName) {
 	FILE *f, *fc, *fcTemp;
 	char *fileCompressedName;
 	char byte;
+	bitmap *table;
 
 	f = fopen(fileName, "rb");
 	
@@ -307,9 +408,9 @@ bool Compress(char *fileName) {
 	fc = fopen(fileCompressedName, "wb");
 
 	//Armazena a extenção do arquivo original no cabeçalho
-	short int fileTypeLength = strlen(CFData.fileType);
+	short int fileTypeLength = strlen(CFData.fileType) + 1;
 	fwrite(&fileTypeLength, sizeof(short int), 1, fc);
-	fwrite(CFData.fileType, sizeof(char), strlen(CFData.fileType) + 1, fc);
+	fwrite(CFData.fileType, sizeof(char), fileTypeLength, fc);
 
 	frequencyCount(&CFData,f);
 
@@ -322,12 +423,16 @@ bool Compress(char *fileName) {
 	//Colocando o cursor do arquivo de entrada no inicio novamente
 	fseek(f, 0, SEEK_SET);
 	
-	//Cria um arquivo temporario para ser gravado o binario
+	//Cria um arquivo temporario para ser gravado o corpo do arquivo
 	fcTemp = tmpfile();
 	
-	code(&CFData, f, fcTemp);
+	//Criando a tabela de bytes
+	table = createByteTable(&CFData);
+		
+	//Iniciando a compactação
+	code(&CFData, f, fcTemp, table);
 	
-	//Grava o tamanho dos dados no arquivo de saida
+	//Gravando o tamanho dos dados no arquivo de saida
 	fwrite(&CFData.dataLength, sizeof(unsigned int), 1, fc);
 
 	//Colocando o cusor de fcTemp no inicio
@@ -338,7 +443,8 @@ bool Compress(char *fileName) {
 		fread(&byte, sizeof(char), 1, fcTemp);
 		fwrite(&byte, sizeof(char), 1, fc);
 	}
-	
+
+	freeByteTable(table, &CFData);
 	fclose(f);
 	fclose(fc);
 	fclose(fcTemp);
@@ -357,10 +463,12 @@ void ProcessHeader(CompressedFileData *CFData, FILE *f) {
 	short int frequency;
 	unsigned char byte;
 	
+	//Lê o tipo do arquivo
 	fread(&fileTypeLength, sizeof(short int), 1, f);
-	CFData->fileType = malloc(sizeof(char)*(fileTypeLength+1));
-	fread(CFData->fileType, sizeof(char), fileTypeLength + 1, f);
+	CFData->fileType = malloc(sizeof(char)*(fileTypeLength));
+	fread(CFData->fileType, sizeof(char), fileTypeLength, f);
 
+	//Lê as informação dos dataBranchs
 	fread(&numItens, sizeof(short int), 1, f);
 
 	CFData->branchList = list_new();
@@ -376,6 +484,7 @@ void ProcessHeader(CompressedFileData *CFData, FILE *f) {
 		list_pushOnLast(CFData->branchList, list_newItem(tree_newBranch(auxData)));
 	}
 
+	//Lê o tamanho do corpo do arquivo
 	fread(&(CFData->dataLength), sizeof(unsigned int), 1, f);
 }
 
@@ -388,6 +497,7 @@ void Decode(CompressedFileData *CFData, FILE *f, FILE *fd) {
 	unsigned char byte,bit;
 	int i, bitCount = 0;
 
+	//Manipulando diretamente o bitmap pois o mesmo n possui função para isso
 	bm.length = bm.max_size = 8;
 	
 	auxBranch = CFData->tree;
@@ -413,8 +523,8 @@ void Decode(CompressedFileData *CFData, FILE *f, FILE *fd) {
 				auxBranch = tree_walkTree(auxBranch, _right);
 			}
 			bitCount++;
-			//após andar na arvore, a função recupera oq esta no galho, caso seja nulo ele continua
-			// o loop, caso seja um byte, ele imprime o byte no arquivo descomprimido,
+			//após andar na arvore, a função verifica se o Nó é uma folha, caso seja, ela imprime
+			//o byte no arquivo descomprimido,
 			//retorna o auxBranch para a raiz da arvore e continua o loop
 			if (isLeaf(auxBranch)) {
 				auxBranchData = tree_getData(auxBranch);
@@ -436,6 +546,7 @@ void Descompress(char *fileName) {
 	fileNameWithoutType = malloc(sizeof(char)*(strlen(fileName)+1));
 	strcpy(fileNameWithoutType, fileName);
 
+	//Verifica se o arquivo é valido
 	fileType = extractFileType(fileNameWithoutType);
 	if (strcmp(fileType, ".comp")) {
 		exit(EXIT_FAILURE);
