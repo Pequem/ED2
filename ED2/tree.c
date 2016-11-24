@@ -100,7 +100,7 @@ void checkWay(bitmap bm, Branch *root, Branch *bTest) {
 	unsigned char bit;
 	for (i = 0; i < length; i++) {
 		bit = bitmapGetBit(bm, i);
-		if (bit == 1) {
+		if (bit == 0) {
 			root = tree_walkTree(root, _left);
 		}
 		else {
@@ -121,10 +121,10 @@ bitmap tree_getWay(Branch *b) {
 	bm = bitmapInit(8);
 	while (b->before != NULL) {
 		if (b->before->left == b) {
-			bitmapAppendLeastSignificantBit(&bm, 1);
+			bitmapAppendLeastSignificantBit(&bm, 0);
 		}
 		else {
-			bitmapAppendLeastSignificantBit(&bm, 0);
+			bitmapAppendLeastSignificantBit(&bm, 1);
 		}
 		b = b->before;
 	}
@@ -148,4 +148,17 @@ void tree_freeBranch(Branch *a) {
 	if (a == NULL)
 		return;
 	free(a);
+}
+
+void tree_free(Branch *root, void(*callback)(void*)) {
+	if (root->left != NULL) {
+		tree_free(root->left, callback);
+	}
+	if (root->right != NULL) {
+		tree_free(root->right, callback);
+	}
+	if (root->data != NULL) {
+		callback(root->data);
+	}
+	free(root);
 }

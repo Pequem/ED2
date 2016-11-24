@@ -7,13 +7,13 @@
 #define false 2
 typedef int bool;
 
-#define _right 0
-#define _left 1
+#define _right 1
+#define _left 0
 typedef int Direction;
 
 typedef struct branch Branch;
 
 bitmap tree_getWay(Branch *b);
 Branch *tree_searchBranch(Branch *root, void *data, bool(*callback)(void*, void*));
-
+void tree_free(Branch *root, void(*callback)(void*));
 #endif
