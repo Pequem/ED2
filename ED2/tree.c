@@ -136,6 +136,13 @@ bitmap tree_getWay(Branch *b) {
 	return bm2;
 }
 
+bool isLastBranch(Branch *auxBranch) {
+	if ((auxBranch->left == NULL) || (auxBranch->right == NULL)) {
+		return true;
+	}
+	return false;
+}
+
 void tree_freeBranch(Branch *a) {
 	if (a == NULL)
 		return;

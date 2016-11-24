@@ -130,17 +130,27 @@ void PreCreateDecoderTree(CompressedFileData *CFData) {
 //Função que cria a arvore otima
 void CreateDecoderTree(CompressedFileData *CFData) {
 	Branch *b1, *b2, *bf;
+	BranchData *BDaux, *BDaux1, *BDaux2;
 
 	while (list_countItems(CFData->branchList) > 1) {
 		b1 = list_pull(CFData->branchList, 0);
 		b2 = list_pull(CFData->branchList, 0);
 
-		bf = tree_newBranch(NULL);
+		BDaux1 = tree_getData(b1);
+		BDaux2 = tree_getData(b2);
 
+		BDaux = malloc(sizeof(BranchData));
+		BDaux->letter = 0;
+		BDaux->frequency = BDaux1->frequency + BDaux2->frequency;
+		bf = tree_newBranch(BDaux);
+		
 		tree_pushBranch(bf, b1, _left);
 		tree_pushBranch(bf, b2, _right);
 
 		list_pushOnLast(CFData->branchList, list_newItem(bf));
+		
+		//ordenando a lista em ordem crescente
+		list_order(CFData->branchList, compare);
 	}
 	CFData->tree = list_pull(CFData->branchList, 0);
 
@@ -244,9 +254,9 @@ void code(CompressedFileData *CFData, FILE *f, FILE *fc) {
 bool Compress(char *fileName) {
 
 	CompressedFileData CFData;
-	FILE *f, *fc;
+	FILE *f, *fc, *fcTemp;
 	char *fileCompressedName;
-	char *fileNameWithoutType;
+	char byte;
 
 	f = fopen(fileName, "rb");
 	
@@ -254,14 +264,11 @@ bool Compress(char *fileName) {
 		return false;
 	}
 
-	fileNameWithoutType = malloc(sizeof(char)*(strlen(fileName)+1));
-	strcpy(fileNameWithoutType, fileName);
+	CFData.fileType = extractFileType(fileName);
 
-	CFData.fileType = extractFileType(fileNameWithoutType);
-
-	fileCompressedName = malloc(sizeof(char)*(strlen(fileNameWithoutType) + 6));
+	fileCompressedName = malloc(sizeof(char)*(strlen(fileName) + 6));
 	
-	strcpy(fileCompressedName, fileNameWithoutType);
+	strcpy(fileCompressedName, fileName);
 	strcat(fileCompressedName, ".comp");
 
 	fc = fopen(fileCompressedName, "wb");
@@ -279,19 +286,32 @@ bool Compress(char *fileName) {
 
 	CreateDecoderTree(&CFData);
 
-	//O arquivo original é fechado e aberto novamente para o cursor voltar ao inicio
-	fclose(f);
-	f = fopen(fileName, "rb");
+	//Colocando o cursor do arquivo de entrada no inicio novamente
+	fseek(f, 0, SEEK_SET);
 	
-	code(&CFData, f, fc);
+	//Cria um arquivo temporario para ser gravado o binario
+	fcTemp = tempfile();
 	
+	code(&CFData, f, fcTemp);
+	
+	//Grava o tamanho dos dados no arquivo de saida
+	fwrite(&CFData.dataLength, sizeof(unsigned int), 1, fc);
+
+	//Colocando o cusor de fcTemp no inicio
+	fseek(fcTemp, 0, SEEK_SET);
+
+	//tranfere o conteudo do arquivo temporario para fc
+	while (feof(fcTemp)) {
+		fread(&byte, sizeof(char), 1, fcTemp);
+		fwrite(&byte, sizeof(char), 1, fc);
+	}
 	
 	fclose(f);
 	fclose(fc);
+	fclose(fcTemp);
 	free(fileCompressedName);
 	tree_free(CFData.tree, freeBranchData);
 	free(CFData.fileType);
-	free(fileNameWithoutType);
 }
 
 //Função que le o cabeçalho do arquivo comprimido é recria a branchList
@@ -351,8 +371,8 @@ void Decode(CompressedFileData *CFData, FILE *f, FILE *fd) {
 			//após andar na arvore, a função recupera oq esta no galho, caso seja nulo ele continua
 			// o loop, caso seja um byte, ele imprime o byte no arquivo descomprimido,
 			//retorna o auxBranch para a raiz da arvore e continua o loop
-			auxBranchData = tree_getData(auxBranch);
-			if (auxBranchData != NULL) {
+			if (isLastBranch(auxBranch)) {
+				auxBranchData = tree_getData(auxBranch);
 				fwrite(&(auxBranchData->letter), sizeof(char), 1, fd);
 				auxBranch = CFData->tree;
 			}
