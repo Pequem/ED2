@@ -28,9 +28,8 @@ int main(int argc, char *argv[]) {
 }
 
 /*
-Reordenar a lista em cada passagem da arvora OKOK
-Criar o sistema para fazer parar OKOK
-Organizar o cod prototipando as função no inicio do arquivo
+Consertar o tamano maximo do bitmap (deve ser a altura da arvore)
+Organizar o cod prototipando as funï¿½ï¿½o no inicio do arquivo
 Separar compactador de descompactador
 Criar lib comum a ambos
 */
