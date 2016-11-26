@@ -5,7 +5,7 @@
 Essa lista é uma lista Genérica, duplamente encadeada e com sentinela
 */
 
-//Constantes criadas para deixar o codigo mais legível
+//Constantes criadas para deixar o código mais legível
 #define true 1
 #define false 0
 typedef short int bool;

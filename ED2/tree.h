@@ -3,12 +3,12 @@
 
 #include "bitmap.h"
 
-//Constantes criadas para deixar o codigo mais legível
+//Constantes criadas para deixar o código mais legível
 #define true 1
 #define false 0
 typedef short int bool;
 
-//Constantes criadas para deixar o codigo mais legível
+//Constantes criadas para deixar o código mais legível
 #define _right 1
 #define _left 0
 typedef int Direction;
@@ -16,8 +16,8 @@ typedef int Direction;
 //Nós da árvore
 typedef struct branch Branch;
 
-//Retorna um Nó da arvore com os dados passados
-//@param data Dados a serem colocados na arvore
+//Retorna um Nó da árvore com os dados passados
+//@param data Dados a serem colocados na árvore
 Branch* tree_newBranch(void *data);
 
 //Insere o Nó b na direção determinada no Nó a

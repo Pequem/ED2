@@ -90,7 +90,7 @@ Branch *tree_walkTree(Branch *b, Direction d) {
 	}
 }
 
-//verifica se o caminho está correto
+//Verifica se o caminho está correto
 void checkWay(bitmap bm, Branch *root, Branch *bTest) {
 	int i, length = bitmapGetLength(bm);
 	unsigned char bit;
