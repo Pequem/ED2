@@ -31,5 +31,4 @@ int main(int argc, char *argv[]) {
 Consertar o tamano máximo do bitmap (deve ser a altura da arvore)
 Organizar o cod prototipando as fun��o no inicio do arquivo
 Separar compactador de descompactador
-Criar lib comum a ambos
 */
