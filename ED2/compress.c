@@ -9,7 +9,7 @@
 //Struct com a árvore e outras informações usadas por várias funções do compactador
 //frequencyArray: vetor usado para contar a frequência dos bytes no arquivo original
 //dataLength:tamanho dos dados comprimidos em bit, esse tamanho é usado pelo descompactador para
-//saber quantos bits representão o arquivo e desconsiderar o lixo que o s.o. insere no final do arquivo
+//saber quantos bits representam o arquivo e desconsiderar o lixo que o s.o. insere no final do arquivo
 //tree: Árvore de codificação e decodificação
 //branchList: lista de galhos com as frequências e o byte representado para montar a arvore
 typedef struct{	
@@ -19,7 +19,7 @@ typedef struct{
 	char *fileType;
 }CompressedFileData;
 
-//Struct para a variálvel data dos nós da árvore
+//Struct para a variável data dos nós da árvore
 typedef struct {
 	unsigned char letter;
 	short int frequency;
@@ -38,7 +38,7 @@ int compare(void* i1, void* i2) {
 }
 
 //Função de callback para compara dados de uma branchData
-void compareData(void *b1, void *b2) {
+bool compareData(void *b1, void *b2) {
 	if ((b1 == NULL) || (b2 == NULL)) {
 		return false;
 	}
@@ -222,13 +222,6 @@ void freeByteTable(bitmap *table, CompressedFileData *CFData) {
 	free(table);
 }
 
-//void pb(bitmap b) {
-//	int i;
-//	for (i = 0; i < bitmapGetLength(b); i++) {
-//		printf("%i", bitmapGetBit(b, i));
-//	}
-//}
-
 //Função responsável por compactar o arquivo
 void code(CompressedFileData *CFData, FILE *f, FILE *fc, bitmap* table) {
 
@@ -411,7 +404,7 @@ bool Compress(char *fileName) {
 
 	fc = fopen(fileCompressedName, "wb");
 
-	//Armazena a estenção do arquivo original no cabeçalho
+	//Armazena a extensão do arquivo original no cabeçalho
 	short int fileTypeLength = strlen(CFData.fileType) + 1;
 	fwrite(&fileTypeLength, sizeof(short int), 1, fc);
 	fwrite(CFData.fileType, sizeof(char), fileTypeLength, fc);
