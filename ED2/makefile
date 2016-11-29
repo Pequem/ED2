@@ -1,19 +1,7 @@
-CC = gcc
+all: prog prog1
 
-CFLAGS = -Wall -g
+prog:
+    gcc bitmap.c Compacta.c compress.c list.c tree.c -o Compacta 
 
-LDFLAGS = -lm
-
-FONTES = $(wildcard *.c)
-
-OBJETOS = $(FONTES:.c=.o)
-
-EXECUTAVEL = ED2
-
-all: $(EXECUTAVEL)
-
-$(EXECUTAVEL): $(OBJETOS)
-	$(CC) -o $@ $^ $(LDFLAGS)
-
-%.o: %.c
-	$(CC) -c $(CFLAGS) $^
+prog1:
+    gcc bitmap.c Descompacta.c compress.c list.c tree.c -o Descompacta 

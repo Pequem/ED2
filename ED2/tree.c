@@ -1,6 +1,7 @@
 #include "tree.h"
 #include "bitmap.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 struct branch {
 	Branch *left, *right, *before;
@@ -79,7 +80,7 @@ void tree_setData(Branch *b, void *data) {
 
 Branch *tree_walkTree(Branch *b, Direction d) {
 	if (b == NULL) {
-		return;
+		return NULL;
 	}
 	
 	if (d == _right) {
@@ -144,7 +145,7 @@ bitmap tree_getWay(Branch *b) {
 
 bool isLeaf(Branch *auxBranch) {
 	if (auxBranch == NULL)
-		return;
+		return false;
 	if ((auxBranch->left == NULL) && (auxBranch->right == NULL)) {
 		return true;
 	}
