@@ -12,19 +12,19 @@
 //saber quantos bits representam o arquivo e desconsiderar o lixo que o s.o. insere no final do arquivo
 //tree: Árvore de codificação e decodificação
 //branchList: lista de galhos com as frequências e o byte representado para montar a arvore
-typedef struct{	
+struct compressedFileData{
 	unsigned int frequencyArray[256], dataLength;
 	Branch *tree;
 	List *branchList;
 	char *fileType;
-}CompressedFileData;
+};
 
 //Struct para a variável data dos nós da árvore
-typedef struct {
+struct branchData{
 	unsigned char letter;
 	short int frequency;
 	bool haveByte;
-} BranchData;
+};
 
 //função de callback para list_order 
 int compare(void* i1, void* i2) {

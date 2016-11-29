@@ -116,7 +116,7 @@ bitmap tree_getWay(Branch *b) {
 	//Copia do Nó atual para testar o caminho
 	Branch *bTest = b;
 	bitmap bm;
-	bm = bitmapInit(15);
+	bm = bitmapInit(256);
 	//Descobre o caminho do Nó até a raiz
 	while (b->before != NULL) {
 		if (b->before->left == b) {
